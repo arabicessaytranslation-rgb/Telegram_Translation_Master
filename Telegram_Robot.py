@@ -2,6 +2,8 @@ import os
 import re
 import datetime
 import smtplib
+import threading
+from http.server import HTTPServer, BaseHTTPRequestHandler
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import gspread
@@ -9,7 +11,15 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, ContextTypes, filters
-from telegram.request import HTTPXRequest
+
+# ==========================================
+# 0. تهيئة ملف الـ JSON أماناً من متغيرات البيئة على Render
+# ==========================================
+if not os.path.exists('service_account.json'):
+    json_data = os.environ.get('GOOGLE_SERVICE_ACCOUNT_JSON')
+    if json_data:
+        with open('service_account.json', 'w', encoding='utf-8') as f:
+            f.write(json_data)
 
 # ==========================================
 # 1. إعدادات النظام الأساسية
@@ -45,9 +55,9 @@ SCOPES = [
 # 2. دوال معالجة جوجل درايف والملفات
 # ==========================================
 def get_google_services():
-    # قراءة بيانات الاعتماد مباشرة من ملف الـ JSON المرفوع على السيرفر
+    # قراءة بيانات الاعتماد من ملف الـ JSON
     creds = service_account.Credentials.from_service_account_file(
-        'translation-bot-509319-2bc713922402.json', scopes=SCOPES
+        'service_account.json', scopes=SCOPES
     )
     gc = gspread.authorize(creds)
     drive_svc = build('drive', 'v3', credentials=creds, cache_discovery=False)
@@ -215,22 +225,30 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception as e:
             await query.edit_message_text(f"❌ حدث خطأ أثناء المعالجة: {e}")
 
+# ==========================================
+# 4. تشغيل خادم الويب الوهمي والبوت معاً
+# ==========================================
+def run_dummy_server():
+    port = int(os.environ.get("PORT", 10000))
+    class SimpleHandler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b"Bot is alive and running!")
+    server = HTTPServer(('', port), SimpleHandler)
+    server.serve_forever()
+
 def main():
-    # إعداد البروكسي الصحيح لبيئة PythonAnywhere المجانية
-    request = HTTPXRequest(proxy="http://proxy.server:3128")
-    
-    app = (
-        Application.builder()
-        .token(TELEGRAM_BOT_TOKEN)
-        .request(request)
-        .build()
-    )
+    # تشغيل خادم الويب في الخلفية للتوافق مع متطلبات Render
+    threading.Thread(target=run_dummy_server, daemon=True).start()
+
+    app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
     
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.add_handler(CallbackQueryHandler(button_callback))
     
-    print("🤖 Production Bot is running via PAW Proxy...")
+    print("🤖 Production Bot is running on Render...")
     app.run_polling()
 
 if __name__ == '__main__':
