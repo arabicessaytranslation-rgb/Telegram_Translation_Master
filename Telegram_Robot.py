@@ -215,12 +215,20 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.edit_message_text(f"❌ حدث خطأ أثناء المعالجة: {e}")
 
 def main():
-    app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
+    # إضافة بروكسي بايثون أنواير الإجباري للحسابات المجانية للاتصال بـ Telegram API
+    app = (
+        Application.builder()
+        .token(TELEGRAM_BOT_TOKEN)
+        .proxy_url("http://proxy.server:3128")
+        .get_updates_proxy_url("http://proxy.server:3128")
+        .build()
+    )
+    
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.add_handler(CallbackQueryHandler(button_callback))
-
-    print("🤖 Production Bot is running...")
+    
+    print("🤖 Production Bot is running via PAW Proxy...")
     app.run_polling()
 
 if __name__ == '__main__':
