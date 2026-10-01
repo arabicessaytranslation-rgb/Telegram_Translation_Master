@@ -9,6 +9,7 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, ContextTypes, filters
+from telegram.request import HTTPXRequest
 
 # ==========================================
 # 1. إعدادات النظام الأساسية
@@ -215,12 +216,13 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.edit_message_text(f"❌ حدث خطأ أثناء المعالجة: {e}")
 
 def main():
-    # إضافة بروكسي بايثون أنواير الإجباري للحسابات المجانية للاتصال بـ Telegram API
+    # إعداد البروكسي الإجباري لبيئة PythonAnywhere المجانية باستخدام HTTPXRequest
+    request = HTTPXRequest(proxy_url="http://proxy.server:3128")
+    
     app = (
         Application.builder()
         .token(TELEGRAM_BOT_TOKEN)
-        .proxy_url("http://proxy.server:3128")
-        .get_updates_proxy_url("http://proxy.server:3128")
+        .request(request)
         .build()
     )
     
