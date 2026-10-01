@@ -216,8 +216,8 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.edit_message_text(f"❌ حدث خطأ أثناء المعالجة: {e}")
 
 def main():
-    # إعداد البروكسي الإجباري لبيئة PythonAnywhere المجانية باستخدام HTTPXRequest
-    request = HTTPXRequest(proxy_url="http://proxy.server:3128")
+    # إعداد البروكسي الصحيح لبيئة PythonAnywhere المجانية
+    request = HTTPXRequest(proxy="http://proxy.server:3128")
     
     app = (
         Application.builder()
