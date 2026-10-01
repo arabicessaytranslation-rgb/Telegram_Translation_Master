@@ -46,7 +46,7 @@ SCOPES = [
 def get_google_services():
     # قراءة بيانات الاعتماد مباشرة من ملف الـ JSON المرفوع على السيرفر
     creds = service_account.Credentials.from_service_account_file(
-        'translation-bot-509319-520b1b1c1832.json', scopes=SCOPES
+        'translation-bot-509319-2bc713922402.json', scopes=SCOPES
     )
     gc = gspread.authorize(creds)
     drive_svc = build('drive', 'v3', credentials=creds, cache_discovery=False)
